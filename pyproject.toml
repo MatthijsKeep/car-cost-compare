@@ -1,0 +1,12 @@
+[project]
+name = "car-cost-compare"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13.9"
+dependencies = [
+    "numpy>=2.3.4",
+    "pandas>=2.3.3",
+    "plotly>=6.4.0",
+    "streamlit>=1.51.0",
+]
