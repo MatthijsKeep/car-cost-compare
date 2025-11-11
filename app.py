@@ -30,8 +30,8 @@ with st.sidebar:
     road_taxes_yearly_cash = st.number_input("Motorrijtuigenbelasting Yearly (€, cash buy)", value=850)
     
     st.subheader("Depreciation Model")
-    decay_rate_new = st.number_input("Decay Rate New Cars (k, annual)", value=0.15)
-    decay_rate_used = st.number_input("Decay Rate Used Cars (k, annual)", value=0.08)
+    decay_rate_new = st.number_input("Decay Rate New Cars (k, annual)", value=0.14)
+    decay_rate_used = st.number_input("Decay Rate Used Cars (k, annual)", value=0.07)
     residual_percentage = st.number_input("Residual % of Purchase (floor)", value=0.20)
 
 # Main Body: Car and Scenario Inputs
