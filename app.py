@@ -6,12 +6,11 @@ import sqlite3
 import math
 import os
 
-from cost_calculator import business_lease_costs, cash_purchase_monthly_costs, personal_lease_costs
+from cost_calculator import business_lease_costs, cash_purchase_monthly_costs, personal_lease_costs, depreciate_value
 
 # Ensure DB file is in the app directory
 DB_PATH = 'cars.db'
 
-@st.cache_resource
 def init_db():
     """Initialize SQLite database with cars table and sample data."""
     conn = sqlite3.connect(DB_PATH)
@@ -33,7 +32,7 @@ def init_db():
     ''')
     # Sample data for quick start (ignores if exists)
     sample_cars = [
-        ('Tesla Model 3 LR', 40000, 17000, 40000, 1, 'ev', 0.08, 265, 500, 850),
+        ('Tesla Model 3 LR', 50000, 17000, 51000, 1, 'ev', 0.08, 265, 500, 850),
         ('BMW 3 Series', 45000, 20000, 45000, 0, 'petrol', 0.12, 300, 600, 900),
         ('Volvo S60', 42000, 18000, 42000, 1, 'ev', 0.08, 280, 550, 800)
     ]
@@ -47,7 +46,7 @@ def init_db():
     return True
 
 # Initialize DB on app start
-init_db()
+# init_db()
 
 st.title("Interactive Car Cost Comparison Dashboard")
 st.markdown("Fully configurable tool for comparing business lease, personal lease, and cash purchase scenarios over 5 years, with depreciation in cash TCO. Now with DB-backed multi-car scenarios.")
@@ -149,7 +148,6 @@ with st.sidebar:
                     conn.close()
 
 # Load cars from DB for main app
-@st.cache_data
 def load_cars():
     conn = sqlite3.connect(DB_PATH)
     df = pd.read_sql("SELECT * FROM cars", conn)
@@ -209,25 +207,10 @@ else:
         if scen in ["Business Lease", "Personal Lease"]:
             with st.expander(f"Lease Details for {car_name} ({scen})", expanded=False):
                 cat_val = car_data.get((car_name, scen), {}).get('cataloguswaarde', 40000)
-
-                if scen == "Business Lease":
-                    lease_inputs[(car_name, scen)] = {
-                        'monthly_lease_business': st.number_input(
-                            f"Business Lease Monthly (€) for {car_name}",
-                            value=500,
-                            key=f"bus_{car_name}_{scen}"
-                        )
-                    }
-
-                elif scen == "Personal Lease":
-                    lease_inputs[(car_name, scen)] = {
-                        'monthly_lease_personal': st.number_input(
-                            f"Personal Lease Monthly (€) for {car_name}",
-                            value=450,
-                            key=f"pers_{car_name}_{scen}"
-                        )
-                    }
-
+                lease_inputs[(car_name, scen)] = {
+                    'monthly_lease_business': st.number_input(f"Business Lease Monthly (€) for {car_name}", value=500, key=f"bus_{car_name}"),
+                    'monthly_lease_personal': st.number_input(f"Personal Lease Monthly (€) for {car_name}", value=450, key=f"pers_{car_name}")
+                }
 
 if st.button("Generate Costs"):
     if not scenarios:
@@ -235,15 +218,15 @@ if st.button("Generate Costs"):
     else:
         months = list(range(1, (years * 12) + 1))
         fig = go.Figure()
-        all_costs = {}  # Dict for summary
+        all_costs = {}  # Dict for summary: scenario_name -> cumsum array
         
         for car_name, scen in scenarios:
             car_params = car_data[(car_name, scen)]
             is_used_cash = (scen == "Cash Buy")
             purchase_price = car_params['purchase_price_used'] if is_used_cash else car_params['purchase_price_new']
             is_ev = car_params['is_ev']
-            fuel_cost_per_km = car_params['fuel_cost_per_km'] if is_ev else 0.12  # Fallback
-            ev_cost_per_km = car_params['fuel_cost_per_km'] if is_ev else 0.08  # Streamlined: use DB value
+            fuel_cost_per_km = car_params['fuel_cost_per_km']
+            ev_cost_per_km = fuel_cost_per_km if is_ev else 0.12  # Streamlined: use DB value for EV, fallback for petrol
             ins_monthly = car_params['insurance_monthly_cash']
             maint_yearly = car_params['maintenance_yearly_cash']
             taxes_yearly = car_params['road_taxes_yearly_cash']
@@ -255,24 +238,27 @@ if st.button("Generate Costs"):
                     mobility_budget_gross_monthly, tax_rate_on_bijtelling, bijtelling_rate_ev_low, bijtelling_rate_standard
                 )
                 bus_costs = [bus_monthly] * len(months)
-                all_costs[f"{scen} {car_name}"] = np.cumsum(bus_costs)
-                fig.add_trace(go.Scatter(x=months, y=all_costs[f"{scen} {car_name}"], mode='lines', name=f"{scen} {car_name}"))
+                cumsum = np.cumsum(bus_costs)
+                all_costs[f"{scen} {car_name}"] = cumsum
+                fig.add_trace(go.Scatter(x=months, y=cumsum, mode='lines', name=f"{scen} {car_name}"))
             
             elif scen == "Personal Lease":
                 pers_monthly = personal_lease_costs(
                     lease_inputs[(car_name, scen)]['monthly_lease_personal'], is_ev, km_per_year, fuel_cost_per_km, ev_cost_per_km
                 )
                 pers_costs = [pers_monthly] * len(months)
-                all_costs[f"{scen} {car_name}"] = np.cumsum(pers_costs)
-                fig.add_trace(go.Scatter(x=months, y=all_costs[f"{scen} {car_name}"], mode='lines', name=f"{scen} {car_name}"))
+                cumsum = np.cumsum(pers_costs)
+                all_costs[f"{scen} {car_name}"] = cumsum
+                fig.add_trace(go.Scatter(x=months, y=cumsum, mode='lines', name=f"{scen} {car_name}"))
             
             elif scen == "Cash Buy":
                 cash_costs = [cash_purchase_monthly_costs(
                     purchase_price, is_used_cash, m, is_ev, km_per_year, fuel_cost_per_km, ev_cost_per_km,
                     ins_monthly, maint_yearly, opportunity_rate, decay_rate_new, decay_rate_used, residual_percentage, taxes_yearly
                 ) for m in months]
-                all_costs[f"{scen} {car_name}"] = np.cumsum(cash_costs)
-                fig.add_trace(go.Scatter(x=months, y=all_costs[f"{scen} {car_name}"], mode='lines', name=f"{scen} {car_name} (w/ Depr.)"))
+                cumsum = np.cumsum(cash_costs)
+                all_costs[f"{scen} {car_name}"] = cumsum
+                fig.add_trace(go.Scatter(x=months, y=cumsum, mode='lines', name=f"{scen} {car_name} (w/ Depr.)"))
         
         fig.update_layout(
             title=f"Cumulative Costs Over Time (€)",
@@ -281,24 +267,30 @@ if st.button("Generate Costs"):
         )
         st.plotly_chart(fig, use_container_width=True)
         
-        # Insights
-        annual_fuel_ev = km_per_year * ev_cost_per_km
-        annual_fuel_petrol = km_per_year * fuel_cost_per_km
-        st.info(f"Computed: Petrol Fuel €{annual_fuel_petrol:.0f}/year, EV Fuel €{annual_fuel_ev:.0f}/year")
+        # Insights (use average fuel from scenarios)
+        avg_fuel_ev = km_per_year * (ev_cost_per_km if any(is_ev for _, params in car_data.items() if params['is_ev']) else 0.08)
+        avg_fuel_petrol = km_per_year * (fuel_cost_per_km if any(not params['is_ev'] for _, params in car_data.items()) else 0.12)
+        st.info(f"Computed: Petrol Fuel €{avg_fuel_petrol:.0f}/year, EV Fuel €{avg_fuel_ev:.0f}/year")
         
-        # Summary Table
-        summary_data = {
-            'Scenario': list(all_costs.keys()),
-            'Monthly Avg (€)': [np.mean(costs / len(months)) for costs in all_costs.values()],  # Per month avg
-            'Total Over Period (€)': list(all_costs.values())[-1] if all_costs else [],
-            'Key Component': [f'Net Bij + Mobility Loss' if 'Business' in k else f'Lease + Fuel' if 'Personal' in k else f'Depr. + Ongoing' for k in all_costs.keys()]
-        }
-        summary_df = pd.DataFrame(summary_data)
-        st.subheader("Cost Summary")
-        st.table(summary_df)
+        # Fixed Summary Table: Extract per-scenario totals and avgs
+        if all_costs:
+            totals = [cumsum[-1] for cumsum in all_costs.values()]
+            monthly_avgs = [total / len(months) for total in totals]
+            keys = list(all_costs.keys())
+            key_components = [f'Net Bij + Mobility Loss' if 'Business' in k else f'Lease + Fuel' if 'Personal' in k else f'Depr. + Ongoing' for k in keys]
+            
+            summary_data = {
+                'Scenario': keys,
+                'Monthly Avg (€)': monthly_avgs,
+                'Total Over Period (€)': totals,
+                'Key Component': key_components
+            }
+            summary_df = pd.DataFrame(summary_data)
+            st.subheader("Cost Summary")
+            st.table(summary_df)
         
         # Yearly Depreciation for Cash Buys (aggregated if multiple)
-        cash_scens = [s for s in scenarios if s[1] == "Cash Buy"]
+        cash_scens = [(car, scen) for car, scen in scenarios if scen == "Cash Buy"]
         if cash_scens:
             st.subheader("Yearly Car Value (Exponential Decay)")
             years_list = list(range(1, years + 1))
@@ -320,6 +312,7 @@ if st.button("Generate Costs"):
                     'End Value (€)': year_values,
                     'Annual Depr. (€)': annual_depr
                 })
+                st.subheader(f"Depreciation for {car_name}")
                 st.table(depr_df)
 
 st.markdown("""
