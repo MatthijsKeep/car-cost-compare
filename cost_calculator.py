@@ -33,11 +33,14 @@ def depreciate_value(purchase_price, is_used, month, decay_rate_new, decay_rate_
     return value, monthly_depr
 
 def business_lease_costs(monthly_lease, cataloguswaarde, is_ev, mobility_budget_gross_monthly, tax_rate_on_bijtelling, bijtelling_rate_ev_low, bijtelling_rate_standard):
-    """Monthly business lease: lost mobility budget + net bijtelling (company covers lease)."""
+    """Monthly business lease: net bijtelling + lost mobility net + excess lease over budget (company-paid base)."""
     annual_bij_gross, annual_bij_net = calculate_bijtelling(cataloguswaarde, is_ev, bijtelling_rate_ev_low, bijtelling_rate_standard, tax_rate_on_bijtelling)
-    lost_mobility_annual_net = (mobility_budget_gross_monthly * 12) * (1 - tax_rate_on_bijtelling)  # Net value of lost benefit
-    total_annual = annual_bij_net + lost_mobility_annual_net
-    return total_annual / 12
+    bij_monthly_net = annual_bij_net / 12
+    lost_mobility_annual_net = (mobility_budget_gross_monthly * 12) * (1 - tax_rate_on_bijtelling)
+    lost_mobility_monthly_net = lost_mobility_annual_net / 12
+    excess_lease_monthly = max(0, monthly_lease - mobility_budget_gross_monthly)  # Direct excess as per spec
+    total_monthly = bij_monthly_net + lost_mobility_monthly_net + excess_lease_monthly
+    return total_monthly
 
 def personal_lease_costs(monthly_lease, is_ev, km_per_year, fuel_cost_per_km, ev_cost_per_km):
     """Monthly personal lease: fixed (includes insurance), plus fuel (not bundled)."""
