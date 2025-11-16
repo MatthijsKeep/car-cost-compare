@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import dash_daq as daq
 
 from cost_calculator import simulate_costs_for_fleet
-from alembic.models import engine
+from models import engine
 # Initialize app with Bootstrap theme
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -16,7 +16,7 @@ COLORS = {
     'card': '#ffffff',
     'primary': '#0066cc',
     'secondary': '#6c757d',
-    'text': '#212529'
+    'text': "#03192F"
 }
 
 # Custom styling for sliders
@@ -146,6 +146,7 @@ def update_dashboard(n_kilometers_per_year, n_years, is_cumulative):
     # Vehicle data
     # Read from SQLite using Polars
     df_pl = pl.read_database("SELECT * FROM cars", connection=engine)
+    print(df_pl)
     
     df_cost = simulate_costs_for_fleet(df_pl, n_years, n_kilometers_per_year)
     
