@@ -4,7 +4,7 @@ from alembic import context
 import os
 
 # Your SQLAlchemy models
-from models import Base  # Import your declarative base
+from alembic.models import Base  # Import your declarative base
 
 config = context.config
 

@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import dash_daq as daq
 
 from cost_calculator import simulate_costs_for_fleet
-
+from alembic.models import engine
 # Initialize app with Bootstrap theme
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
@@ -144,21 +144,8 @@ app.layout = dbc.Container([
 )
 def update_dashboard(n_kilometers_per_year, n_years, is_cumulative):
     # Vehicle data
-    data = {
-        "id": [1, 2], 
-        "name": ["Tesla Model 3", "Opel Corsa-e"],  # Capitalized for display
-        "type": ["buy", "buy"], 
-        "build_year": [2019, 2022],
-        "build_month": [1, 1],
-        "buy_year": [2025, 2025],
-        "buy_month": [11, 11],
-        "purchase_cost": [18000.0, 17000.0],
-        "road_taxes_yearly": [1000.0, 700.0],
-        "insurance_monthly": [280.0, 180.0],
-        "fuel_per_km": [0.08, 0.08],
-        "depreciation_k": [0.08, 0.08]
-    }
-    df_pl = pl.DataFrame(data)
+    # Read from SQLite using Polars
+    df_pl = pl.read_database("SELECT * FROM cars", connection=engine)
     
     df_cost = simulate_costs_for_fleet(df_pl, n_years, n_kilometers_per_year)
     
@@ -177,11 +164,11 @@ def update_dashboard(n_kilometers_per_year, n_years, is_cumulative):
         ]).with_columns([
             pl.col("monthly_cost").alias("total_costs_over_time")
         ])
-    
+
     # Update labels based on toggle
     y_label = "Total Cost (€)" if is_cumulative else "Monthly Cost (€)"
     toggle_label = "Cumulative" if is_cumulative else "Monthly"
-    
+
     # Create plot (same as before, but dynamic y-axis label)
     fig = px.line(
         exploded_df,
