@@ -159,14 +159,15 @@ def update_dashboard(n_kilometers_per_year, n_years, is_cumulative):
         "depreciation_k": [0.08, 0.08]
     }
     df_pl = pl.DataFrame(data)
-
+    
     df_cost = simulate_costs_for_fleet(df_pl, n_years, n_kilometers_per_year)
     
     # Explode for plotting
     exploded_df = df_cost.with_columns(
         pl.int_ranges(1, pl.col("total_costs_over_time").list.len()+1).alias("month")
     ).explode(["total_costs_over_time", "month"])
-
+    
+    # Transform to monthly if needed (APP-SIDE)
     if not is_cumulative:
         exploded_df = exploded_df.with_columns([
             (pl.col("total_costs_over_time") - 
