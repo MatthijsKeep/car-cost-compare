@@ -171,13 +171,11 @@ def update_dashboard(n_kilometers_per_year, n_years, is_cumulative):
     # Transform to monthly if needed (APP-SIDE)
     if not is_cumulative:
         exploded_df = exploded_df.with_columns([
-            # Calculate monthly cost as difference from previous month
             (pl.col("total_costs_over_time") - 
              pl.col("total_costs_over_time").shift(1).fill_null(0))
             .over("name")  # Group by vehicle name
             .alias("monthly_cost")
         ]).with_columns([
-            # Replace cumulative with monthly for plotting
             pl.col("monthly_cost").alias("total_costs_over_time")
         ])
     
