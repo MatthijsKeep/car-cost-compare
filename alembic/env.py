@@ -11,7 +11,7 @@ config = context.config
 # Override with environment variable or hardcode path
 config.set_main_option(
     "sqlalchemy.url",
-    os.getenv("DATABASE_URL", "sqlite:///./cars.db")
+    os.getenv("DATABASE_URL", "sqlite:///./db/cars.db")
 )
 
 target_metadata = Base.metadata  # This is key for autogenerate!
