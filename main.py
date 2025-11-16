@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import dash_daq as daq
 
 from cost_calculator import simulate_costs_for_fleet
-from models import engine
+from db.models import engine
 # Initialize app with Bootstrap theme
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
