@@ -159,8 +159,7 @@ def update_dashboard(n_kilometers_per_year, n_years, is_cumulative):
         "depreciation_k": [0.08, 0.08]
     }
     df_pl = pl.DataFrame(data)
-    
-    # Calculate costs
+
     df_cost = simulate_costs_for_fleet(df_pl, n_years, n_kilometers_per_year)
     
     # Explode for plotting
