@@ -22,18 +22,14 @@ def cost_over_time(row: dict, n_years: int, n_kilometer_per_year: int) -> np.nda
     n_months = n_years * 12
     costs = np.zeros(n_months)
 
-    monthly_costs = (row["road_taxes_yearly"] / 12) + row["insurance_monthly"] + (n_kilometer_per_year / 12 * row["fuel_per_km"])
+    monthly_costs = (row["road_taxes_yearly"] / 12) + row["insurance_monthly"] + (n_kilometer_per_year / 12 * row["fuel_per_km"]) + (row["purchase_cost"] * 0.06 * (1/12))
 
     for i in range(n_months):
         car_age_months = (row["buy_year"] * 12 + row["buy_month"] + i + 1) - (row["build_year"] * 12 + row["build_month"])
-        if (row["type"] == "buy") and i == 0:
-            costs[i] += row["purchase_cost"]
         if i >= 1:
             costs[i] += costs[i-1]
         remaining_value, depreciation_monthly = depreciate_value(purchase_price=row["purchase_cost"], month=car_age_months, decay_rate=row["depreciation_k"], residual_percentage=0.2)
         costs[i] += (monthly_costs + depreciation_monthly)
-        if i == (n_months - 1):
-            costs[i] -= remaining_value
         costs[i] = np.round(costs[i], decimals=2)
 
     return costs
