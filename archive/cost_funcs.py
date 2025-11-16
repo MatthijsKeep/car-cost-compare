@@ -1,3 +1,5 @@
+from cost_calculator import depreciate_value
+
 def business_lease_costs(monthly_lease, cataloguswaarde, is_ev, mobility_budget_gross_monthly, tax_rate_on_bijtelling, bijtelling_rate_ev_low, bijtelling_rate_standard):
     """Monthly business lease: net bijtelling + lost mobility net + excess lease over budget (company-paid base)."""
     annual_bij_gross, annual_bij_net = calculate_bijtelling(cataloguswaarde, is_ev, bijtelling_rate_ev_low, bijtelling_rate_standard, tax_rate_on_bijtelling)

@@ -2,7 +2,6 @@ from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
 import polars as pl
 import plotly.express as px
-import plotly.graph_objects as go
 import dash_daq as daq
 
 from cost_calculator import simulate_costs_for_fleet
