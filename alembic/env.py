@@ -4,17 +4,17 @@ from alembic import context
 import os
 
 # Your SQLAlchemy models
-from db.models import Base  # Import your declarative base
+from models import Base  # Import your declarative base
 
 config = context.config
 
 # Override with environment variable or hardcode path
 config.set_main_option(
-    "sqlalchemy.url",
-    os.getenv("DATABASE_URL", "sqlite:///./db/cars.db")
+    "sqlalchemy.url", os.getenv("DATABASE_URL", "sqlite:///./db/cars.db")
 )
 
 target_metadata = Base.metadata  # This is key for autogenerate!
+
 
 def run_migrations_online():
     connectable = engine_from_config(
@@ -28,11 +28,12 @@ def run_migrations_online():
             connection=connection,
             target_metadata=target_metadata,
             # Important for SQLite
-            render_as_batch=True  # Handles SQLite's ALTER TABLE limitations
+            render_as_batch=True,  # Handles SQLite's ALTER TABLE limitations
         )
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -56,6 +57,7 @@ def run_migrations_offline() -> None:
 
     with context.begin_transaction():
         context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

@@ -5,9 +5,10 @@ from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
 
+
 class Car(Base):
-    __tablename__ = 'cars'
-    
+    __tablename__ = "cars"
+
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     type = Column(String)
@@ -21,6 +22,7 @@ class Car(Base):
     fuel_per_km = Column(Float)
     depreciation_k = Column(Float)
 
+
 # Create engine
-engine = create_engine('sqlite:///./db/cars.db')
+engine = create_engine("sqlite:///./db/cars.db")
 Session = sessionmaker(bind=engine)
